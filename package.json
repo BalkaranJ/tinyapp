@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/BalkaranJ/tinyapp/issues"
   },
-  "homepage": "https://github.com/BalkaranJ/tinyapp#readme"
+  "homepage": "https://github.com/BalkaranJ/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
