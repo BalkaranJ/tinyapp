@@ -15,15 +15,8 @@ function generateRandomString() {
   return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
 }
 
-
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-
-
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
 
 app.post("/urls", (req, res) => {
   console.log(urlDatabase);
@@ -66,7 +59,16 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
+app.get("/", (req, res) => {
+  res.send("Hello!");
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
+app.post('/urls/:shortURL/delete', (req, res) => {
+  const shortURL = req.params.shortURL;
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
+});
