@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
-
+const bcrypt = require('bcrypt');
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -55,12 +55,11 @@ const userLookup = function(email) {
 //  push the shortURL to the result
 //  return the result
 
-//
+//Only Urls for that User Will Appear 
 const urlsForUser = function(id) {
   let userURLS = {};
   for (shortURL in urlDatabase) {
     if (urlDatabase[shortURL].userID === id) {
-      // userURLS.push(urlDatabase[shortURL]);
       userURLS[shortURL] = urlDatabase[shortURL];
     } 
   }
@@ -76,30 +75,6 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 //ROUTES
 
-
-// const urlDatabase = {
-//   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-//   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
-//   12345: {}
-// };
-
-// const users = { 
-//   "userRandomID": {
-//     id: "userRandomID", 
-//     email: "user@example.com", 
-//     password: "purple-monkey-dinosaur"
-//   },
-//  "user2RandomID": {
-//     id: "user2RandomID", 
-//     email: "user2@example.com", 
-//     password: "dishwasher-funk"
-//   }
-// };
-
-// First user is created
-//12345
-
-
 //MAIN LANDING PAGE
 app.get("/urls", (req, res) => {
   let userID = req.cookies.userID;
@@ -114,18 +89,6 @@ app.get("/urls", (req, res) => {
   }
 });
 
-// //NEW URL PAGE
-// app.get("/urls/new", (req, res) => {
-//   let userID = req.cookies.userID;
-//   let user = users[userID];
-//   let templateVars = { user };
-//   //Only Registered and Logged in Users can acess the create short url page
-//   if (!user) {
-//     res.redirect("/login");
-//   }
-//   res.render("urls_new", templateVars);
-// });
-
 //GET LOGIN ROUTE
 app.get("/login", (req, res) => {
   res.render("urls_login");
@@ -138,13 +101,23 @@ app.post("/login", (req, res) => {
   if(!result) {
     return res.status(403).send("403 Bad Request");
   } else {
-    // console.log(result);
-    if (result.password === password) {
-      res.cookie('userID', result['id']);
-      res.redirect("/urls");
-    } else {
-      return res.send("Bad Username / Password");
-    }
+
+    bcrypt
+    .compare(password, result.password)
+    .then((result) => {
+      if (result) {
+        res.cookie('userID', result['id']);
+        res.redirect("/urls");
+      } else {
+        res.status(401).send("Bad Username / Password");
+      }
+    })
+    // if (result.password === password) {
+    //   res.cookie('userID', result['id']);
+    //   res.redirect("/urls");
+    // } else {
+    //   return res.send("Bad Username / Password");
+    // }
   }
 });
 
@@ -153,13 +126,6 @@ app.post("/logout", (req, res) => {
   res.clearCookie('userID');
   res.redirect('/urls');
 });
-
-
-// const urlDatabase = {
-//   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-//   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
-// };
-
 
 //NEW URL PAGE
 app.get("/urls/new", (req, res) => {
@@ -196,18 +162,38 @@ app.post('/register', (req, res) => {
   if(!email || !password || userLookup(email)) {
     return res.status(400).send("400 Bad Request");
   }
-  if (email && password && !users[email]) {
-    users[randomId] = {
-      id: randomId,
-      email: email,
-      password: password
-    }
-    res.cookie('userID', randomId);
-    // console.log(users);
-    res.redirect(`/urls`);
-  } else {
-    res.redirect('/register');
-  }
+
+
+  bcrypt
+    .genSalt(10)
+    .then((salt) => {
+      return bcrypt.hash(password, salt);
+    })
+    .then((hash) => {
+      console.log('async hash:', hash);
+      users[randomId] = {
+        id: randomId,
+        email: email,
+        password: hash
+      }
+      console.log(users);
+      res.cookie('userID', randomId);
+      res.redirect('/urls');
+    });
+
+
+  // if (email && password && !users[email]) {
+  //   users[randomId] = {
+  //     id: randomId,
+  //     email: email,
+  //     password: password
+  //   }
+  //   res.cookie('userID', randomId);
+  //   // console.log(users);
+  //   res.redirect(`/urls`);
+  // } else {
+  //   res.redirect('/register');
+  // }
 });
 
 
