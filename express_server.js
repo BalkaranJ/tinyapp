@@ -8,13 +8,12 @@ const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs");
 
-
 //GLOBAL OBJECTS
+
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
-
 
 const users = { 
   "userRandomID": {
@@ -29,10 +28,8 @@ const users = {
   }
 };
 
+//GLOBAL FUNCTIONS
 
-
-//WORK ON RANDOM STRING GENERATOR
-  //URL SHORTENING PART 1 WEEK 3 DAY 1
 function generateRandomString() {
   return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
 }
@@ -48,14 +45,6 @@ const userLookup = function(email) {
   return false;
 };
 
-
-//PSUEDO CODE
-// Initilize the final value
-// Loop over the urlDatabase object
-// if the userID of shortURL in urlDatabase is equal to the id passed in
-//  push the shortURL to the result
-//  return the result
-
 //Only Urls for that User Will Appear 
 const urlsForUser = function(id) {
   let userURLS = {};
@@ -68,9 +57,8 @@ const urlsForUser = function(id) {
   return userURLS;
 }
 
-
 //MIDDLEWARE
-// app.use(cookieParser());
+
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.use(cookieSession({
@@ -83,8 +71,6 @@ app.use(cookieSession({
 //MAIN LANDING PAGE
 app.get("/urls", (req, res) => {
   let userID = req.session.userID;
-  console.log(userID);
-  
   let user = users[userID];
   if (user) {
     let specificUserUrls = urlsForUser(userID)
@@ -114,9 +100,6 @@ app.post("/login", (req, res) => {
     .compare(password, userEmail.password)
     .then((result) => {
       if (result) {
-        console.log("this is the result:", result);
-        
-        // res.cookie('userID', result['id']);
         req.session.userID = userEmail['id'];
         res.redirect("/urls");
       } else {
@@ -128,7 +111,6 @@ app.post("/login", (req, res) => {
 
 //LOGOUT ROUTE
 app.post("/logout", (req, res) => {
-  // res.clearCookie('userID');
   req.session = null;
   res.redirect('/urls');
 });
@@ -180,7 +162,6 @@ app.post('/register', (req, res) => {
         email: email,
         password: hash
       }
-      // res.cookie('userID', randomId);
       req.session.userID = randomId;
       res.redirect('/urls');
     });
@@ -200,8 +181,12 @@ app.get("/urls/:shortURL", (req, res) => {
 //NOT SENDING TO THE LONG URL
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
-  res.redirect(longURL);
+  let urlRecord = urlDatabase[shortURL];
+  if (urlRecord) {
+    res.redirect(urlRecord.longURL);
+  } else {
+    res.send("Bad Short URL");
+  }
 });
 
 //Going to Localhost:8080/ directs you to main /urls page
@@ -209,6 +194,7 @@ app.get("/", (req, res) => {
   res.redirect("/urls");
 });
 
+//Tells you on console what port is being listened too
 app.listen(PORT, () => {
   console.log(`TinyApp is listening on PORT ${PORT}!`);
 });
@@ -225,12 +211,8 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 
 //EDIT POST
 app.post("/urls/:shortURL/edit", (req, res) => {
-  // console.log(req.body);
   const shortURL = req.params.shortURL;
   const newURL = req.body.newURL;
-  console.log(req.session['userID']);
-  // console.log("this is gna be urldatabase:", urlDatabase.shortURL.userID);
-  
   if (req.session['userID'] === urlDatabase[shortURL].userID) {
     urlDatabase[shortURL] = {longURL: newURL, userID: req.session['userID']};
     res.redirect("/urls");
