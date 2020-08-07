@@ -30,11 +30,12 @@ const users = {
 
 //GLOBAL FUNCTIONS
 
+//Random short url number generator
 function generateRandomString() {
   return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
 }
 
-//Registered Email and Password Comparer 
+//Key Comparer 
 const userLookup = function(email) {
   for (let userKey in users) {
     let user = users[userKey];
@@ -53,7 +54,6 @@ const urlsForUser = function(id) {
       userURLS[shortURL] = urlDatabase[shortURL];
     } 
   }
-  console.log(userURLS);
   return userURLS;
 }
 
