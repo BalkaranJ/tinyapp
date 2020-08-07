@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
+// const cookieParser = require("cookie-parser");
+const cookieSession = require("cookie-session");
 const bcrypt = require('bcrypt');
 const app = express();
 const PORT = 8080; // default port 8080
@@ -69,15 +70,21 @@ const urlsForUser = function(id) {
 
 
 //MIDDLEWARE
-app.use(cookieParser());
+// app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended: true}));
 
+app.use(cookieSession({
+  name: 'tinyAppCookie',
+  keys: ['onlyOneKey']
+}));
 
 //ROUTES
 
 //MAIN LANDING PAGE
 app.get("/urls", (req, res) => {
-  let userID = req.cookies.userID;
+  let userID = req.session.userID;
+  console.log(userID);
+  
   let user = users[userID];
   if (user) {
     let specificUserUrls = urlsForUser(userID)
@@ -91,45 +98,44 @@ app.get("/urls", (req, res) => {
 
 //GET LOGIN ROUTE
 app.get("/login", (req, res) => {
-  res.render("urls_login");
+  let user = null;
+  let templateVars = { user };
+  res.render("urls_login", templateVars);
 });
 
 //POST LOGIN ROUTE
 app.post("/login", (req, res) => {
   const {email,password} = req.body;
-  let result = userLookup(email);
-  if(!result) {
+  const userEmail = userLookup(email);
+  if(!userEmail) {
     return res.status(403).send("403 Bad Request");
   } else {
-
     bcrypt
-    .compare(password, result.password)
+    .compare(password, userEmail.password)
     .then((result) => {
       if (result) {
-        res.cookie('userID', result['id']);
+        console.log("this is the result:", result);
+        
+        // res.cookie('userID', result['id']);
+        req.session.userID = userEmail['id'];
         res.redirect("/urls");
       } else {
         res.status(401).send("Bad Username / Password");
       }
     })
-    // if (result.password === password) {
-    //   res.cookie('userID', result['id']);
-    //   res.redirect("/urls");
-    // } else {
-    //   return res.send("Bad Username / Password");
-    // }
   }
 });
 
 //LOGOUT ROUTE
 app.post("/logout", (req, res) => {
-  res.clearCookie('userID');
+  // res.clearCookie('userID');
+  req.session = null;
   res.redirect('/urls');
 });
 
 //NEW URL PAGE
 app.get("/urls/new", (req, res) => {
-  let userID = req.cookies.userID;
+  let userID = req.session.userID;
   let user = users[userID];
   let templateVars = { user };
   //Only Registered and Logged in Users can acess the create short url page
@@ -141,17 +147,18 @@ app.get("/urls/new", (req, res) => {
 
 //CREATING A NEW URL
 app.post("/urls", (req, res) => {
-  let userID = req.cookies.userID;
+  let userID = req.session.userID;
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = {longURL, userID};
-  console.log("GET /urls Database:", urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 });
 
 //REGISTERING A NEW USER
 app.get('/register', (req, res) => {
-  res.render("urls_register",);
+  let user = null;
+  let templateVars = { user };
+  res.render("urls_register", templateVars);
 });
 
 //POST REGISTERING A NEW USER
@@ -162,85 +169,54 @@ app.post('/register', (req, res) => {
   if(!email || !password || userLookup(email)) {
     return res.status(400).send("400 Bad Request");
   }
-
-
   bcrypt
     .genSalt(10)
     .then((salt) => {
       return bcrypt.hash(password, salt);
     })
     .then((hash) => {
-      console.log('async hash:', hash);
       users[randomId] = {
         id: randomId,
         email: email,
         password: hash
       }
-      console.log(users);
-      res.cookie('userID', randomId);
+      // res.cookie('userID', randomId);
+      req.session.userID = randomId;
       res.redirect('/urls');
     });
-
-
-  // if (email && password && !users[email]) {
-  //   users[randomId] = {
-  //     id: randomId,
-  //     email: email,
-  //     password: password
-  //   }
-  //   res.cookie('userID', randomId);
-  //   // console.log(users);
-  //   res.redirect(`/urls`);
-  // } else {
-  //   res.redirect('/register');
-  // }
 });
 
-
 app.get("/urls/:shortURL", (req, res) => {
-  let userID = req.cookies.userID;
+  let userID = req.session.userID;
   let user = users[userID];
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL].longURL;
-  let templateVars = { shortURL, longURL, user};
-  console.log("GET /urls/:shortURL log:", longURL);
+  console.log(urlDatabase[shortURL].longURL);
   
+  const longURL = urlDatabase[shortURL].longURL;
+  let templateVars = { shortURL, longURL, user};  
   res.render("urls_show", templateVars)
 });
 
+//NOT SENDING TO THE LONG URL
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
   res.redirect(longURL);
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
+//Going to Localhost:8080/ directs you to main /urls page
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+  console.log(`TinyApp is listening on PORT ${PORT}!`);
 });
-
-
-// const urlDatabase = {
-//   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-//   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
-// };
 
 //DELETE POST
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
-  if (req.cookies['userID'] === urlDatabase[shortURL].userID) {
+  if (req.session['userID'] === urlDatabase[shortURL].userID) {
     delete urlDatabase[shortURL];
     res.redirect("/urls");
   } else {
@@ -252,8 +228,11 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   // console.log(req.body);
   const shortURL = req.params.shortURL;
   const newURL = req.body.newURL;
-  if (req.cookies['userID'] === urlDatabase[shortURL].userID) {
-    urlDatabase[shortURL] = {longURL: newURL, userID: req.cookies['userID']};
+  console.log(req.session['userID']);
+  // console.log("this is gna be urldatabase:", urlDatabase.shortURL.userID);
+  
+  if (req.session['userID'] === urlDatabase[shortURL].userID) {
+    urlDatabase[shortURL] = {longURL: newURL, userID: req.session['userID']};
     res.redirect("/urls");
   } else {
     res.status(403).send("Not Logged in");  
