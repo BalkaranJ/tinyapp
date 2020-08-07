@@ -23,7 +23,7 @@ const users = {
   },
  "user2RandomID": {
     id: "user2RandomID", 
-    email: "khalsahero@hotmail.com", 
+    email: "user2@example.com", 
     password: "hello"
   }
 };
@@ -171,8 +171,6 @@ app.get("/urls/:shortURL", (req, res) => {
   let userID = req.session.userID;
   let user = users[userID];
   const shortURL = req.params.shortURL;
-  console.log(urlDatabase[shortURL].longURL);
-  
   const longURL = urlDatabase[shortURL].longURL;
   let templateVars = { shortURL, longURL, user};  
   res.render("urls_show", templateVars)
