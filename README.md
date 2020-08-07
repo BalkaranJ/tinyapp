@@ -4,9 +4,9 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Created By
 
-Author: Balkaran Jaswal
-Github: BalkaranJ
-Slack:  Balkaran Jaswal
+Author: Balkaran Jaswal |
+Github: BalkaranJ |
+Slack:  Balkaran Jaswal |
 Instagram: BalkaranJ
 
 ## Final Product
