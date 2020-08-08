@@ -1,6 +1,5 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-// const cookieParser = require("cookie-parser");
 const cookieSession = require("cookie-session");
 const bcrypt = require('bcrypt');
 const app = express();
@@ -183,7 +182,7 @@ app.get("/u/:shortURL", (req, res) => {
   if (urlRecord) {
     res.redirect(urlRecord.longURL);
   } else {
-    res.send("Bad Short URL");
+    res.send("Not a created short URL");
   }
 });
 
