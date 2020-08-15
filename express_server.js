@@ -76,15 +76,23 @@ app.get("/urls", (req, res) => {
     let templateVars = { urls : specificUserUrls, user};
     res.render("urls_index", templateVars);
   } else {
-    res.status(403).send("Not Logged In.");
+    res.status(403).send(" Hey, you are not logged in! Either login at /login, or register at /register!");
   }
 });
 
 //GET LOGIN ROUTE
 app.get("/login", (req, res) => {
-  let user = null;
-  let templateVars = { user };
-  res.render("urls_login", templateVars);
+  let userID = req.session.userID;
+  let user = users[userID];
+  if (user) {
+    res.redirect("/urls");
+  } else {
+    let templateVars = { user };
+    res.render("urls_login", templateVars);
+  }
+  // let user = null;
+  // let templateVars = { user };
+  // res.render("urls_login", templateVars);
 });
 
 //POST LOGIN ROUTE
@@ -92,7 +100,7 @@ app.post("/login", (req, res) => {
   const {email,password} = req.body;
   const userEmail = userLookup(email);
   if(!userEmail) {
-    return res.status(403).send(` ${email} was not a registered email. Please visit the registration page to create an account for TinyApp URL Shortner! `);
+    return res.status(403).send(` ${email} was not a registered email. Please visit the registration page ( /register ) to create an account for TinyApp URL Shortner! `);
   } else {
     bcrypt
     .compare(password, userEmail.password)
