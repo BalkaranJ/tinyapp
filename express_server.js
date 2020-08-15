@@ -76,7 +76,7 @@ app.get("/urls", (req, res) => {
     let templateVars = { urls : specificUserUrls, user};
     res.render("urls_index", templateVars);
   } else {
-    res.status(403).send("Not Logged in, must be logged in to existing account to view shortened URLS");
+    res.status(403).send("Not Logged In.");
   }
 });
 
@@ -92,7 +92,7 @@ app.post("/login", (req, res) => {
   const {email,password} = req.body;
   const userEmail = userLookup(email);
   if(!userEmail) {
-    return res.status(403).send("Non-existent login email, please register");
+    return res.status(403).send(` ${email} was not a registered email. Please visit the registration page to create an account for TinyApp URL Shortner! `);
   } else {
     bcrypt
     .compare(password, userEmail.password)
@@ -136,9 +136,14 @@ app.post("/urls", (req, res) => {
 
 //REGISTERING A NEW USER
 app.get('/register', (req, res) => {
-  let user = null;
-  let templateVars = { user };
-  res.render("urls_register", templateVars);
+  let userID = req.session.userID;
+  let user = users[userID];
+  if (user) {
+    res.redirect("/urls")
+  } else {
+    let templateVars = { user };
+    res.render("urls_register", templateVars);
+  }
 });
 
 //POST REGISTERING A NEW USER
