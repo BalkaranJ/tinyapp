@@ -3,7 +3,7 @@ const bodyParser = require("body-parser");
 const cookieSession = require("cookie-session");
 const bcrypt = require('bcrypt');
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080;
 
 app.set("view engine", "ejs");
 
@@ -44,16 +44,6 @@ const userLookup = function(email) {
   }
   return false;
 };
-
-// const userLookupID = function(id) {
-//   for (let userKey in users) {
-//     let user = users[userKey];
-//     if (user.id === id) {
-//       return user;
-//     }
-//   }
-//   return false;
-// };
 
 //Only Urls for that User Will Appear 
 const urlsForUser = function(id) {
@@ -132,12 +122,13 @@ app.post("/logout", (req, res) => {
 app.get("/urls/new", (req, res) => {
   let userID = req.session.userID;
   let user = users[userID];
-  let templateVars = { user };
   //Only Registered and Logged in Users can acess the create short url page
-  if (!user) {
+  if (user) {
+    let templateVars = { user };
+    res.render("urls_new", templateVars);
+  } else {
     res.redirect("/login");
   }
-  res.render("urls_new", templateVars);
 });
 
 //CREATING A NEW URL
@@ -167,7 +158,7 @@ app.post('/register', (req, res) => {
   let randomId = generateRandomString();
   //Registration Errors
   if(!email || !password || userLookup(email)) {
-    return res.status(400).send("400 Bad Request");
+    return res.status(400).send(" Already Registered ");
   }
   bcrypt
     .genSalt(10)
@@ -185,10 +176,7 @@ app.post('/register', (req, res) => {
     });
 });
 
-
-
 //SHORTURL PAGE FOR USER 
-  //Also allows re-assigning of the same short url tag to a new website url
 app.get("/urls/:shortURL", (req, res) => {
   let flag = false;
   let userID = req.session.userID;
