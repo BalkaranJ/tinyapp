@@ -76,8 +76,7 @@ app.get("/urls", (req, res) => {
     let templateVars = { urls : specificUserUrls, user};
     res.render("urls_index", templateVars);
   } else {
-    let templateVars = { urls : [], user};
-    res.render("urls_index", templateVars);
+    res.status(403).send("Not Logged in, must be logged in to existing account to view shortened URLS");
   }
 });
 
@@ -93,7 +92,7 @@ app.post("/login", (req, res) => {
   const {email,password} = req.body;
   const userEmail = userLookup(email);
   if(!userEmail) {
-    return res.status(403).send("403 Bad Request");
+    return res.status(403).send("Non-existent login email, please register");
   } else {
     bcrypt
     .compare(password, userEmail.password)
@@ -169,13 +168,17 @@ app.post('/register', (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   let userID = req.session.userID;
   let user = users[userID];
-  const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL].longURL;
-  let templateVars = { shortURL, longURL, user};  
-  res.render("urls_show", templateVars)
+  if (user) {
+    const shortURL = req.params.shortURL;
+    const longURL = urlDatabase[shortURL].longURL;
+    let templateVars = { shortURL, longURL, user};  
+    res.render("urls_show", templateVars);
+  } else {
+    res.status(403).send("Not Logged In");
+  }
 });
 
-//NOT SENDING TO THE LONG URL
+//SHORTURL LINK SENDS TO ACTUAL URL
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   let urlRecord = urlDatabase[shortURL];
@@ -186,9 +189,15 @@ app.get("/u/:shortURL", (req, res) => {
   }
 });
 
-//Going to Localhost:8080/ directs you to main /urls page
+//GOING TO localhost:8080/ logged in will take you to /urls, if not logged in it will take you too /login
 app.get("/", (req, res) => {
-  res.redirect("/urls");
+  let userID = req.session.userID;
+  let user = users[userID];
+  if (user) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
 });
 
 //Tells you on console what port is being listened too
@@ -214,6 +223,6 @@ app.post("/urls/:shortURL/edit", (req, res) => {
     urlDatabase[shortURL] = {longURL: newURL, userID: req.session['userID']};
     res.redirect("/urls");
   } else {
-    res.status(403).send("Not Logged in");  
+    res.status(403).send("Not Logged In");  
   }
 });
