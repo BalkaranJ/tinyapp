@@ -45,6 +45,16 @@ const userLookup = function(email) {
   return false;
 };
 
+// const userLookupID = function(id) {
+//   for (let userKey in users) {
+//     let user = users[userKey];
+//     if (user.id === id) {
+//       return user;
+//     }
+//   }
+//   return false;
+// };
+
 //Only Urls for that User Will Appear 
 const urlsForUser = function(id) {
   let userURLS = {};
@@ -90,9 +100,6 @@ app.get("/login", (req, res) => {
     let templateVars = { user };
     res.render("urls_login", templateVars);
   }
-  // let user = null;
-  // let templateVars = { user };
-  // res.render("urls_login", templateVars);
 });
 
 //POST LOGIN ROUTE
@@ -178,27 +185,56 @@ app.post('/register', (req, res) => {
     });
 });
 
+
+
+//SHORTURL PAGE FOR USER 
+  //Also allows re-assigning of the same short url tag to a new website url
 app.get("/urls/:shortURL", (req, res) => {
+  let flag = false;
   let userID = req.session.userID;
-  let user = users[userID];
-  if (user) {
-    const shortURL = req.params.shortURL;
-    const longURL = urlDatabase[shortURL].longURL;
-    let templateVars = { shortURL, longURL, user};  
-    res.render("urls_show", templateVars);
-  } else {
-    res.status(403).send("Not Logged In");
+  let shortURL = req.params.shortURL;
+  if (userID) {
+    let user = users[userID];
+    for(let key in urlDatabase){
+      if(urlDatabase[key].userID === userID && shortURL === key){
+        flag = true;
+        break;
+      }
+    }
+    if(flag){ //means belong to the same user
+      const shortURL = req.params.shortURL;
+      const longURL = urlDatabase[shortURL].longURL;
+      let templateVars = { shortURL, longURL, user};  
+      res.render("urls_show", templateVars);
+    } else {
+      res.status(403).send("ShortURL tag does not belong to you!");
+    }
+  } else { //means the user is not logged in
+    res.send("Sorry you are not logged in. Kindly login");
   }
 });
 
-//SHORTURL LINK SENDS TO ACTUAL URL
+//SHORTURL LINK SENDER TO ACTUAL URL
 app.get("/u/:shortURL", (req, res) => {
-  const shortURL = req.params.shortURL;
-  let urlRecord = urlDatabase[shortURL];
-  if (urlRecord) {
-    res.redirect(urlRecord.longURL);
-  } else {
-    res.send("Not a created short URL");
+  let flag = false;
+  let userID = req.session.userID;
+  let shortURL = req.params.shortURL;
+  if (userID) {
+    let user = users[userID];
+    for(let key in urlDatabase){
+      if(urlDatabase[key].userID === userID && shortURL === key){
+        flag = true;
+        break;
+      }
+    }
+    if(flag){ //means belong to the same user
+      let urlRecord = urlDatabase[shortURL];
+      res.redirect(urlRecord.longURL);
+    } else {
+      res.status(403).send("ShortURL tag does not belong to you!");
+    }
+  } else { //means the user is not logged in
+    res.send("Sorry you are not logged in. Kindly login");
   }
 });
 
